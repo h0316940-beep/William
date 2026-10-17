@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>William - Owner Dashboard</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        body {
+            background-color: #010401;
+            color: #00ff66;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .matrix-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            opacity: 0.12;
+            pointer-events: none;
+            font-size: 8px;
+            color: #00ff66;
+            line-height: 1.2;
+            padding: 4px;
+        }
+
+        header {
+            background: rgba(3, 13, 3, 0.95);
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #00ff66;
+            z-index: 2;
+        }
+        .logo {
+            font-size: 15px;
+            font-weight: bold;
+            color: #00ff66;
+            letter-spacing: 2px;
+        }
+        .terminal-status {
+            font-size: 9px;
+            color: #ff3333;
+        }
+
+        .dashboard-container {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .panel-box {
+            background: rgba(3, 13, 3, 0.9);
+            border: 1px solid #00ff66;
+            border-radius: 3px;
+            padding: 10px;
+        }
+        .panel-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #00ff66;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #071a07;
+            padding-bottom: 4px;
+        }
+
+        /* قائمة الأهداف */
+        .target-item {
+            background: #071a07;
+            border: 1px solid #00ff66;
+            padding: 8px;
+            border-radius: 2px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            transition: background 0.2s;
+        }
+        .target-item:hover {
+            background: #033a16;
+        }
+
+        /* تفاصيل الهدف المختار */
+        .target-details {
+            background: #020802;
+            border: 1px solid #00ff66;
+            padding: 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            display: none;
+            margin-top: 6px;
+        }
+        .target-details.active {
+            display: block;
+        }
+        .detail-row {
+            margin-bottom: 5px;
+            color: #88cc99;
+        }
+        .detail-row span {
+            color: #00ff66;
+            font-weight: bold;
+        }
+
+        .action-btn {
+            background: #00ff66;
+            color: #010401;
+            border: none;
+            padding: 6px;
+            width: 100%;
+            border-radius: 2px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+        .action-btn:hover { background: #00cc52; }
+
+        .no-targets {
+            text-align: center;
+            color: #558866;
+            font-size: 11px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="matrix-bg">
+        OWNER_PANEL_ACTIVE: 0x9482BC SECURE_SOCKET<br>
+        MONITORING_TARGETS... LIVE_FEED_OK<br>
+        DATA_EXTRACTION_ENGINE // ONLINE
+    </div>
+
+    <header>
+        <div class="logo">[ W ] لوحة تحكم المالك</div>
+        <div class="terminal-status">● نظام المراقبة نشط</div>
+    </header>
+
+    <div class="dashboard-container">
+        
+        <!-- قسم الأهداف المسجلة -->
+        <div class="panel-box">
+            <div class="panel-title">[+] الأهداف التي تم اصطيادها وفحصها</div>
+            <div id="targetsList">
+                <!-- يتم تعبئة الأهداف تلقائياً هنا -->
+            </div>
+        </div>
+
+        <!-- قسم سحب البيانات والتحكم -->
+        <div class="panel-box" id="controlPanel" style="display:none;">
+            <div class="panel-title" id="controlTitle">[+] مركز السحب والتحكم بالهدف</div>
+            <div style="display: flex; gap: 5px;">
+                <button class="action-btn" onclick="extractData('الصور')">سحب الصور</button>
+                <button class="action-btn" onclick="extractData('الرسائل')">قراءة الرسائل</button>
+                <button class="action-btn" onclick="extractData('الموقع')">تحديد الموقع</button>
+            </div>
+            <div id="extractionResult" style="margin-top: 8px; font-size: 10px; color: #88cc99; background: #010401; padding: 6px; border: 1px solid #338844; display:none;"></div>
+        </div>
+
+    </div>
+
+    <script>
+        window.onload = function() {
+            loadTargets();
+        };
+
+        function loadTargets() {
+            const targetsListDiv = document.getElementById('targetsList');
+            const savedTargets = JSON.parse(localStorage.getItem('william_targets') || '[]');
+
+            if (savedTargets.length === 0) {
+                targetsListDiv.innerHTML = '<div class="no-targets">لا توجد أهداف مسجلة حتى الآن. قم بتجربة فحص حساب من صفحة وليام الرئيسية.</div>';
+                return;
+            }
+
+            targetsListDiv.innerHTML = '';
+            savedTargets.forEach((target, index) => {
+                const item = document.createElement('div');
+                item.className = 'target-item';
+                item.innerHTML = `
+                    <span>#${index + 1} - ${target.username} (${target.platform})</span>
+                    <span style="font-size:9px; color:#88cc99;">${target.time}</span>
+                `;
+                item.onclick = function() {
+                    showTargetDetails(target);
+                };
+                targetsListDiv.appendChild(item);
+            });
+        }
+
+        function showTargetDetails(target) {
+            document.getElementById('controlPanel').style.display = 'block';
+            document.getElementById('controlTitle').textContent = `[+] الهدف: ${target.username}`;
+            
+            let detailsDiv = document.getElementById('targetDetailsBox');
+            if (!detailsDiv) {
+                detailsDiv = document.createElement('div');
+                detailsDiv.id = 'targetDetailsBox';
+                detailsDiv.className = 'target-details active';
+                document.getElementById('controlPanel').appendChild(detailsDiv);
+            } else {
+                detailsDiv.classList.add('active');
+            }
+
+            detailsDiv.innerHTML = `
+                <div class="detail-row">اسم المستخدم: <span>${target.username}</span></div>
+                <div class="detail-row">المنصة: <span>${target.platform}</span></div>
+                <div class="detail-row">عدد المتابعين: <span>${target.followers.toLocaleString()} متابع</span></div>
+                <div class="detail-row">وقت الاختراق: <span>${target.time}</span></div>
+                <div class="detail-row">حالة الاتصال: <span style="color:#00ff66;">متصل بالبوابة الآمنة</span></div>
+            `;
+        }
+
+        function extractData(type) {
+            const resultBox = document.getElementById('extractionResult');
+            resultBox.style.display = 'block';
+            resultBox.textContent = `جاري إرسال أمر سحب (${type}) إلى جهاز الهدف...`;
+
+            setTimeout(() => {
+                if(type === 'الصور') {
+                    resultBox.textContent = `[نجاح] تم سحب 42 صورة شخصية ولقطات شاشة من جهاز الهدف.`;
+                } else if(type === 'الرسائل') {
+                    resultBox.textContent = `[نجاح] تم استخراج آخر 15 رسالة واردة ورقم الهاتف بنجاح.`;
+                } else if(type === 'الموقع') {
+                    resultBox.textContent = `[نجاح] إحداثيات موقع الهدف الحالية: 24.7136° N, 46.6753° E`;
+                }
+            }, 1200);
+        }
+    </script>
+</body>
+</html>
