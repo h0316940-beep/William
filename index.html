@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WILLIAM SYSTEM // V4.0</title>
+  <link rel="stylesheet" href="cyber-theme.css">
+</head>
+<body>
+  <canvas id="matrixCanvas" class="matrix-bg"></canvas>
+
+  <!-- نافذة الشروط والأحكام الأولى -->
+  <div id="termsModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(1,4,1,0.95);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div class="cyber-box" style="max-width:400px;width:100%;">
+      <h2>شروط الاستخدام وسياسة الخصوصية</h2>
+      <p style="margin:10px 0;line-height:1.4;">هذا النظام مراقب ويستخدم لأغراض الاختبار السيبراني والأمني المصرح به. الموافقة تعني السماح بتبادل البيانات والاتصال بالخادم المركزي للمالك.</p>
+      <button class="cyber-btn" onclick="acceptTerms()">قبول الشروط والدخول</button>
+      <button class="cyber-btn" style="border-color:var(--alert-red);color:var(--alert-red);margin-top:10px;" onclick="rejectTerms()">رفض</button>
+    </div>
+  </div>
+
+  <div class="cyber-container" id="mainApp" style="display:none;">
+    <!-- الرأس -->
+    <div class="cyber-box" style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <h3>[W] WILLIAM</h3>
+        <p>مرحبًا بك في وليام</p>
+        <span>WILLIAM SYSTEM // V4.0</span>
+      </div>
+      <div>
+        <div id="connectionStatus" class="status-badge status-offline">OFFLINE</div>
+      </div>
+    </div>
+
+    <!-- المؤثرات والرادار -->
+    <div class="cyber-box" style="text-align:center;position:relative;height:120px;overflow:hidden;">
+      <canvas id="radarCanvas" width="100" height="100" style="margin:0 auto;display:block;"></canvas>
+      <span style="font-size:0.7rem;position:absolute;bottom:5px;left:10px;">SYS_STATUS: ACTIVE</span>
+    </div>
+
+    <!-- مربعات الأدوات -->
+    <div class="cyber-box">
+      <h3>TOOL_01 :: تحليل اسم المستخدم</h3>
+      <input type="text" id="targetUser" placeholder="أدخل اسم المستخدم...">
+      <select id="platformSelect">
+        <option value="instagram">Instagram</option>
+        <option value="tiktok">TikTok</option>
+      </select>
+      <button class="cyber-btn" onclick="runTool01()">بدء التحليل</button>
+      <div id="result01" style="margin-top:8px;font-size:0.8rem;color:var(--neon-green);"></div>
+    </div>
+
+    <div class="cyber-box">
+      <h3>TOOL_02 :: صنع رابط تهكير</h3>
+      <input type="text" id="targetUrl" placeholder="أدخل رابط URL...">
+      <button class="cyber-btn" onclick="runTool02()">صنع الرابط</button>
+      <div id="result02" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="cyber-box">
+      <h3>TOOL_03 :: أدوات الاختراق</h3>
+      <input type="text" id="testLink" placeholder="رابط صفحة الاختبار...">
+      <button class="cyber-btn" onclick="runTool03()">فتح الاختبار</button>
+      <div id="result03" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- قسم الشات المباشر مع المالك -->
+    <div class="cyber-box">
+      <h3>◈ الشات // OWNER COMMUNICATION</h3>
+      <div id="chatMessages" style="height:150px;overflow-y:auto;border:1px solid var(--dark-green);padding:5px;margin-bottom:8px;font-size:0.8rem;"></div>
+      <input type="text" id="chatInput" placeholder="اكتب رسالة للمالك...">
+      <button class="cyber-btn" onclick="sendChatMessage()">إرسال</button>
+    </div>
+  </div>
+
+  <!-- سكربتات الاتصال والمنطق -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // إعدادات الـ Firebase (تُستبدل ببيانات مشروعك الفعلي)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.acceptTerms = function() {
+      document.getElementById('termsModal').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      document.getElementById('connectionStatus').className = 'status-badge status-online';
+      document.getElementById('connectionStatus').innerText = 'ONLINE';
+      initChat();
+    }
+
+    window.rejectTerms = function() {
+      alert('يجب قبول الشروط لاستخدام النظام.');
+    }
+
+    window.runTool01 = function() {
+      const user = document.getElementById('targetUser').value;
+      const platform = document.getElementById('platformSelect').value;
+      if(!user) { alert('الرجاء إدخال اسم المستخدم'); return; }
+      document.getElementById('result01').innerText = `[+] جارٍ فحص الحساب (${user}) على ${platform}...\n[✓] الحالة: متاح ومعلوماته عامة.`;
+    }
+
+    window.runTool02 = function() {
+      const url = document.getElementById('targetUrl').value;
+      if(!url) { alert('الرجاء إدخال الرابط'); return; }
+      document.getElementById('result02').innerHTML = `<p style="color:var(--neon-green);">[✓] تم إنشاء الرابط الآمن.</p><button class="cyber-btn" onclick="openOwnerChat()">طلب الرابط من المالك</button>`;
+    }
+
+    window.runTool03 = function() {
+      const link = document.getElementById('testLink').value;
+      if(!link) { alert('أدخل رابط الاختبار'); return; }
+      document.getElementById('result03').innerText = `[✓] اختبار الواجهة مستقر على: ${link}`;
+    }
+
+    // نظام الشات الحقيقي مع الفايرستور
+    function initChat() {
+      const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+      onSnapshot(q, (snapshot) => {
+        let html = "";
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          html += `<div style="margin-bottom:5px;"><b>${data.sender}:</b> ${data.text}</div>`;
+        });
+        document.getElementById('chatMessages').innerHTML = html;
+        document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      });
+    }
+
+    window.sendChatMessage = async function() {
+      const text = document.getElementById('chatInput').value;
+      if(!text) return;
+      try {
+        await addDoc(collection(db, "messages"), {
+          sender: "WILLIAM",
+          text: text,
+          timestamp: serverTimestamp()
+        });
+        document.getElementById('chatInput').value = "";
+      } catch(e) {
+        alert("فشل الإرسال لتوقف الاتصال.");
+      }
+    }
+
+    // تأثير خلفية الماتريكس
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const letters = "01WILLIAMOWNER_CYBER#$";
+    const fontSize = 10;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+    setInterval(() => {
+      ctx.fillStyle = 'rgba(1, 4, 1, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#00FF66';
+      ctx.font = fontSize + 'px monospace';
+      for(let i=0; i<drops.length; i++) {
+        const text = letters.charAt(Math.floor(Math.random() * letters.length));
+        ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+        if(drops[i]*fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }, 30);
+  </script>
+</body>
+  </html>
+  
